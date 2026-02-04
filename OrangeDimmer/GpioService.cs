@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.Device.Gpio;
 
 public class GpioService : IGpioService, IDisposable
@@ -59,7 +59,7 @@ public class GpioService : IGpioService, IDisposable
             return pin;
         }
 
-        GpioController.OpenPin(pinNumber, PinMode.Output);
+        GpioController.OpenPin(pinNumber, PinMode.InputPullUp);
 
         pin = new GpiopIn(GpioController, name, pinNumber);
 
@@ -78,35 +78,5 @@ public class GpioService : IGpioService, IDisposable
         return RegisteredPins?.Values?
              .Select(x => (x as TPin)!)?
              .Where(x => x is not null)?.ToList() ?? [];
-    }
-}
-
-public class PortMonitoringWorker : BackgroundService
-{
-    private readonly IGpioService _gpioService;
-    private readonly IHubContext<SmartHub> _hubContext;
-
-    public PortMonitoringWorker(IGpioService gpioService, IHubContext<SmartHub> hubContext)
-    {
-        _gpioService = gpioService;
-        _hubContext = hubContext;
-    }
-
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        var pin = _gpioService.RegisterInPin("Key", 232);
-        pin.SubscribeToPinChange(async (pinEventType) =>
-         {
-             if(pinEventType == PinEventTypes.Rising)
-             {
-                 Console.WriteLine("Key Pressed");
-             }
-             else
-             {
-                 Console.WriteLine("Key Released");
-             }
-             await _hubContext.Clients.All.SendAsync("PinValueChanged", pin.Name, pinEventType.ToString());
-         });
-        await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 }
