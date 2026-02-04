@@ -1,40 +1,44 @@
 ﻿using System.Device.Gpio;
+using System.Threading;
 
-// نام فنی: PH7 | پین فیزیکی: 19
+// نام فنی: PH7 | شماره لاین: 231 [cite: 2026-02-04]
 int pin = 231;
 using GpioController controller = new GpioController();
 controller.OpenPin(pin, PinMode.Output);
 
-Console.WriteLine("Dimmer started with .NET 8.0 on Pin 19 (PH7)...");
+Console.WriteLine("Dimmer Started on PH7 (Pin 19)... [cite: 2026-02-04]");
 
 while (true)
 {
-    // از صفر تا صد درصد روشنایی
-    for (int i = 0; i <= 100; i += 2)
+    // فاز روشن شدن (Fade In)
+    for (int i = 0; i <= 100; i += 5)
     {
-        ExecutePwm(controller, pin, i);
+        for (int repeat = 0; repeat < 5; repeat++) // تکرار برای ماندگاری در هر پله
+            ExecutePwm(controller, pin, i);
     }
-    // از صد تا صفر درصد روشنایی
-    for (int i = 100; i >= 0; i -= 2)
+    // فاز خاموش شدن (Fade Out)
+    for (int i = 100; i >= 0; i -= 5)
     {
-        ExecutePwm(controller, pin, i);
+        for (int repeat = 0; repeat < 5; repeat++)
+            ExecutePwm(controller, pin, i);
     }
 }
 
 void ExecutePwm(GpioController controller, int pinNum, int dutyCycle)
 {
-    // ایجاد یک چرخه 10 میلی‌ثانیه‌ای
-    int onTime = dutyCycle / 10;
-    int offTime = 10 - onTime;
+    // کل زمان چرخه: 20 میلی‌ثانیه (فرکانس 50 هرتز)
+    int totalTime = 20;
+    int onTime = (dutyCycle * totalTime) / 100;
+    int offTime = totalTime - onTime;
 
     if (onTime > 0)
     {
         controller.Write(pinNum, PinValue.High);
-        Thread.SpinWait(onTime);
+        Thread.Sleep(onTime);
     }
     if (offTime > 0)
     {
         controller.Write(pinNum, PinValue.Low);
-        Thread.SpinWait(offTime);
+        Thread.Sleep(offTime);
     }
 }
