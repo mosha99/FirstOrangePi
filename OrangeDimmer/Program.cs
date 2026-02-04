@@ -1,7 +1,7 @@
 ﻿using System.Device.Gpio;
 
 // نام فنی: PH7 | پین فیزیکی: 19
-int pin = 19;
+int pin = 231;
 using GpioController controller = new GpioController();
 controller.OpenPin(pin, PinMode.Output);
 
@@ -30,11 +30,11 @@ void ExecutePwm(GpioController controller, int pinNum, int dutyCycle)
     if (onTime > 0)
     {
         controller.Write(pinNum, PinValue.High);
-        Thread.Sleep(onTime);
+        Thread.SpinWait(onTime);
     }
     if (offTime > 0)
     {
         controller.Write(pinNum, PinValue.Low);
-        Thread.Sleep(offTime);
+        Thread.SpinWait(offTime);
     }
 }
