@@ -1,32 +1,18 @@
-﻿using System.Device.Gpio;
-using System.Diagnostics;
+﻿var builder = WebApplication.CreateBuilder(args);
 
-// نام فنی: PH7 | پین فیزیکی: 19 [cite: 2026-02-04]
-int pin = 231;
-using GpioController controller = new GpioController();
-controller.OpenPin(pin, PinMode.Output);
+builder.Services.AddSingleton<IGpioService, GpioService>();
+builder.Services.AddSignalR();
 
-Console.WriteLine("Fast & Smooth Dimmer started on PH7... [cite: 2026-02-04]");
+// اجازه دسترسی به همه کلاینت‌ها برای تست
+builder.Services.AddCors(options => options.AddPolicy("CorsPolicy",
+    builder => builder.AllowAnyMethod()
+                      .AllowAnyHeader()
+                      .AllowCredentials()
+                      .SetIsOriginAllowed(hostName => true)));
 
-// استفاده از Stopwatch برای زمان‌بندی دقیق‌تر نانوثانیه‌ای
-Stopwatch sw = new Stopwatch();
+var app = builder.Build();
 
-while (true)
-{
-    // Fade In & Out با گام‌های ۱ درصدی برای نرمی کامل
-    for (int i = 0; i <= 200; i++)
-    {
-        int dutyCycle = i <= 100 ? i : 200 - i;
+app.UseCors("CorsPolicy");
+app.MapHub<SmartHub>("/smarthub");
 
-        // اجرای PWM سریع (فرکانس حدود 100 هرتز برای حذف لرزش)
-        long totalTicks = Stopwatch.Frequency / 100; // 10ms cycle
-        long onTicks = totalTicks * dutyCycle / 100;
-
-        sw.Restart();
-        controller.Write(pin, PinValue.High);
-        while (sw.ElapsedTicks < onTicks) ; // Wait precision
-
-        controller.Write(pin, PinValue.Low);
-        while (sw.ElapsedTicks < totalTicks) ; // Wait precision
-    }
-}
+app.Run("http://0.0.0.0:5000");
