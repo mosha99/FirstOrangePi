@@ -1,44 +1,32 @@
 ﻿using System.Device.Gpio;
-using System.Threading;
+using System.Diagnostics;
 
-// نام فنی: PH7 | شماره لاین: 231 [cite: 2026-02-04]
+// نام فنی: PH7 | پین فیزیکی: 19 [cite: 2026-02-04]
 int pin = 231;
 using GpioController controller = new GpioController();
 controller.OpenPin(pin, PinMode.Output);
 
-Console.WriteLine("Dimmer Started on PH7 (Pin 19)... [cite: 2026-02-04]");
+Console.WriteLine("Fast & Smooth Dimmer started on PH7... [cite: 2026-02-04]");
+
+// استفاده از Stopwatch برای زمان‌بندی دقیق‌تر نانوثانیه‌ای
+Stopwatch sw = new Stopwatch();
 
 while (true)
 {
-    // فاز روشن شدن (Fade In)
-    for (int i = 0; i <= 100; i += 5)
+    // Fade In & Out با گام‌های ۱ درصدی برای نرمی کامل
+    for (int i = 0; i <= 200; i++)
     {
-        for (int repeat = 0; repeat < 5; repeat++) // تکرار برای ماندگاری در هر پله
-            ExecutePwm(controller, pin, i);
-    }
-    // فاز خاموش شدن (Fade Out)
-    for (int i = 100; i >= 0; i -= 5)
-    {
-        for (int repeat = 0; repeat < 5; repeat++)
-            ExecutePwm(controller, pin, i);
-    }
-}
+        int dutyCycle = i <= 100 ? i : 200 - i;
 
-void ExecutePwm(GpioController controller, int pinNum, int dutyCycle)
-{
-    // کل زمان چرخه: 20 میلی‌ثانیه (فرکانس 50 هرتز)
-    int totalTime = 20;
-    int onTime = (dutyCycle * totalTime) / 100;
-    int offTime = totalTime - onTime;
+        // اجرای PWM سریع (فرکانس حدود 100 هرتز برای حذف لرزش)
+        long totalTicks = Stopwatch.Frequency / 100; // 10ms cycle
+        long onTicks = totalTicks * dutyCycle / 100;
 
-    if (onTime > 0)
-    {
-        controller.Write(pinNum, PinValue.High);
-        Thread.Sleep(onTime);
-    }
-    if (offTime > 0)
-    {
-        controller.Write(pinNum, PinValue.Low);
-        Thread.Sleep(offTime);
+        sw.Restart();
+        controller.Write(pin, PinValue.High);
+        while (sw.ElapsedTicks < onTicks) ; // Wait precision
+
+        controller.Write(pin, PinValue.Low);
+        while (sw.ElapsedTicks < totalTicks) ; // Wait precision
     }
 }
