@@ -11,7 +11,10 @@ public class SmartHub : Hub
 
     public async Task SetLightState(bool isOn)
     {
-        _gpioService.ToggleLight(isOn);
+        var pin = _gpioService.RegisterOutPin("Light", 231);
+
+        if (isOn) pin.On();
+        else pin.Of();
 
         // اطلاع‌رسانی به همه کلاینت‌ها درباره وضعیت جدید
         await Clients.All.SendAsync("ReceiveLightStatus", isOn);
