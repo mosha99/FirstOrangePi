@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Iot.Device.KeyMatrix;
+using Microsoft.AspNetCore.SignalR;
 using System.Device.Gpio;
 
 public class PortMonitoringWorker : BackgroundService
@@ -14,19 +15,27 @@ public class PortMonitoringWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var pin = _gpioService.RegisterInPin("Key", 232);
-        pin.SubscribeToPinChange(async (pinEventType) =>
-         {
-             if(pinEventType == PinEventTypes.Rising)
-             {
-                 Console.WriteLine("Key Pressed");
-             }
-             else
-             {
-                 Console.WriteLine("Key Released");
-             }
-             await _hubContext.Clients.All.SendAsync("PinValueChanged", pin.Name, pinEventType.ToString());
-         });
+        int[] rowPins = { 79, 78, 76, 75 }; // پین‌های 26, 24, 21, 19
+        int[] colPins = { 74, 73, 71 };     // پین‌های 18, 16, 12
+        char[] keys = {
+                '1', '2', '3',
+                '4', '5', '6',
+                '7', '8', '9',
+                '*', '0', '#'
+            };
+
+        using KeyMatrix keypad = new KeyMatrix(rowPins, colPins, TimeSpan.FromMilliseconds(20));
+
+        keypad.KeyEvent += (sender, keyEvent) =>
+        {
+            if (keyEvent.EventType == PinEventTypes.Falling)
+            {
+                // پیدا کردن کاراکتر کلید بر اساس ایندکس
+                char pressedKey = keys[keyEvent.Input];
+                Console.WriteLine($"[Event] KeyPresed : {pressedKey}");
+            }
+        };
+
         await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 }

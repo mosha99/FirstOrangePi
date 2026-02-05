@@ -11,10 +11,10 @@ public class SmartHub : Hub
 
     public async Task SetLightState(bool isOn)
     {
-        var pin = _gpioService.RegisterOutPin("Light", 231);
+        /*var pin = _gpioService.RegisterOutPin("Light", 231);
 
         if (isOn) pin.On();
-        else pin.Of();
+        else pin.Of();*/
 
         // اطلاع‌رسانی به همه کلاینت‌ها درباره وضعیت جدید
         await Clients.All.SendAsync("ReceiveLightStatus", isOn);
@@ -26,6 +26,7 @@ public class SmartHub : Hub
         double dutyCycle = level / 100.0;
 
         var pin = _gpioService.RegisterOutPin("Light", 231);
+
         pin.SetPwm(dutyCycle); // فرض بر این است که متد SetPwm را در سرویس داری
 
         // اطلاع‌رسانی به بقیه کلاینت‌ها برای هماهنگی اسلایدرها

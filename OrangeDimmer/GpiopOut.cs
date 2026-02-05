@@ -24,6 +24,12 @@ public record GpiopOut : IGpiop
 
     public void SetPwm(double dutyCycle)
     {
+        // بسیار مهم: اگر پین قبلاً باز شده، آن را می‌بندیم تا Busy نباشد
+        if (Controller.IsPinOpen(PinNumber))
+        {
+            Controller.ClosePin(PinNumber);
+        }
+        Channel?.Dispose();
         Channel = new SoftwarePwmChannel(PinNumber, 400, dutyCycle, usePrecisionTimer: true);
         Channel.Start();
     }
